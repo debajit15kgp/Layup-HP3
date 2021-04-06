@@ -14,6 +14,12 @@
  * virtual functions for the forwards and backwards pass must be implmented by
  * any subclass.
  */
+
+enum LayupLayer_t {
+    LAYUP_COMPUTE_SENSITIVE,
+    LAYUP_TRANSFER_SENSITIVE
+};
+
 class Layer
 {
 public:
@@ -36,6 +42,7 @@ public:
     /* Functions for allocating and setting up weights, biases, and input/output
      * minibatches of data. */
     void allocate_buffers();
+    void deallocate_buffers();
     void init_weights_biases();
 
     /* Functions to evaluate model performance. Only valid for loss layers,
@@ -53,7 +60,7 @@ public:
     virtual size_t get_workspace_size() const;
     void set_workspace(float *workspace, size_t workspace_size);
 
-
+    LayupLayer_t layer_type = LAYUP_TRANSFER_SENSITIVE;
     /* Layup Addon */
     float threshold;
 

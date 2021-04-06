@@ -183,6 +183,50 @@ void Layer::allocate_buffers()
     }
 }
 
+// naive implementation
+void Layer::deallocate_buffers()
+{
+    // The buffers to store the input minibatch in_batch and its derivative
+    // grad_in_batch are already stored in the previous layer, so just share a
+    // pointer.
+    // if (prev)
+    // {
+    //     this->in_batch = prev->get_output_fwd();
+    //     this->grad_in_batch = prev->get_input_bwd();
+    // }
+
+    // Get the shape of the output
+    cudnnDataType_t dtype;
+    int n, c, h, w, n_stride, c_stride, h_stride, w_stride;
+    CUDNN_CALL( cudnnGetTensor4dDescriptor(out_shape, &dtype,
+        &n, &c, &h, &w, &n_stride, &c_stride, &h_stride, &w_stride) );
+
+    // out_batch and grad_out_batch have the same shape as the output
+    int out_size = n * c * h * w;
+
+    CUDA_CALL( cudaFree(&out_batch ));
+    CUDA_CALL( cudaFree(&grad_out_batch));
+
+    // CUDA_CALL( cudaMalloc(&out_batch, out_size * sizeof(float)) );
+    // CUDA_CALL( cudaMalloc(&grad_out_batch, out_size * sizeof(float)) );
+
+    // Allocate buffers for the weights and biases (if there are any)
+    if (n_weights > 0)
+    {
+        CUDA_CALL( cudaFree(&weights));
+        CUDA_CALL( cudaFree(&grad_weights));
+        // CUDA_CALL( cudaMalloc(&weights, n_weights * sizeof(float)) );
+        // CUDA_CALL( cudaMalloc(&grad_weights, n_weights * sizeof(float)) );
+    }
+    if (n_biases > 0)
+    {
+        CUDA_CALL( cudaFree(&biases ));
+        CUDA_CALL( cudaFree(&grad_biases));
+        // CUDA_CALL( cudaMalloc(&biases, n_biases * sizeof(float)) );
+        // CUDA_CALL( cudaMalloc(&grad_biases, n_biases * sizeof(float)) );
+    }
+}
+
 /**
  * Initializes all weights from a uniform distribution bounded between
  * -1/sqrt(input_size) and +1/sqrt(input_size). Initializes all biases to 0.
@@ -308,6 +352,10 @@ void Dense::forward_pass()
 	// cout<<"Inside forward pass of dense layer"<<endl;
 	// cout<<"Inpute Size : "<<in_size<<endl;
 	// cout<<"Output Size : "<<out_size<<endl;
+    // if(layer_type == LAYUP_TRANSFER_SENSITIVE)
+    // {
+    //     allocate_buffers();
+    // }
 	CUBLAS_CALL( cublasSgemm(cublasHandle, CUBLAS_OP_T, CUBLAS_OP_N, 
 		out_size, batch_size, in_size, 
 		&one, 
@@ -326,10 +374,26 @@ void Dense::forward_pass()
         onevec, batch_size,
         &one,
         out_batch, out_size) );
+    // if(layer_type == LAYUP_TRANSFER_SENSITIVE)
+    // {
+    //     deallocate_buffers();
+    // }
 }
 
 /**
- * A dense layer's backward pass computes the gradient of the loss function
+ * A dense layer's backw    // TODO (set 5): biases = biases + eta * grad_biases
+    CUBLAS_CALL( cublasSaxpy(
+				cublasHandle, out_size,
+				&eta,
+				grad_biases, 1,
+				biases, 1
+				) );    // TODO (set 5): biases = biases + eta * grad_biases
+    CUBLAS_CALL( cublasSaxpy(
+				cublasHandle, out_size,
+				&eta,
+				grad_biases, 1,
+				biases, 1
+				) );ard pass computes the gradient of the loss function
  * with respect to its weights, biases, and input minibatch of data. It does
  * so given the gradient with respect to its output, computed by the next
  * layer.
@@ -443,6 +507,10 @@ void Activation::forward_pass()
 	// cout<<"Inside forward pass of Activation layer"<<endl;
 
     // TODO (set 5): apply activation, i.e. out_batch = activation(in_batch)
+    // if(layer_type == LAYUP_TRANSFER_SENSITIVE)
+    // {
+    //     allocate_buffers();
+    // }
     CUDNN_CALL( cudnnActivationForward(
 			cudnnHandle, activation_desc, 
 			&one,
@@ -450,6 +518,10 @@ void Activation::forward_pass()
 			&zero,
 			out_shape, out_batch 	
 			) );
+    // if(layer_type == LAYUP_TRANSFER_SENSITIVE)
+    // {
+    //     deallocate_buffers();
+    // }
     
 }
 
@@ -600,6 +672,11 @@ void Conv2D::forward_pass()
     //               workspace related arguments in the function call, and
     //               use fwd_algo for the algorithm.
     // printf("Forward pass in Conv2D.\n");
+
+    // if(layer_type == LAYUP_TRANSFER_SENSITIVE)
+    // {
+    //     allocate_buffers();
+    // }
     CUDNN_CALL( cudnnConvolutionForward(
         cudnnHandle, 
         &one, 
@@ -615,6 +692,10 @@ void Conv2D::forward_pass()
     CUDNN_CALL( cudnnAddTensor(cudnnHandle,
         &one, bias_desc, biases,
         &one, out_shape, out_batch) );
+    // if(layer_type == LAYUP_TRANSFER_SENSITIVE)
+    // {
+    //     deallocate_buffers();
+    // }
     // printf("Done Forward pass in Conv2D.\n");
 }
 
@@ -686,6 +767,7 @@ void Conv2D::backward_pass(float learning_rate)
             grad_biases, 1,
             biases, 1
         ) );
+    
 }
 
 
@@ -739,6 +821,10 @@ void Pool2D::forward_pass()
     float zero = 0, one = 1;
     // printf("Starting forward passs in Pool2D\n");
     // TODO (set 6): do pooling in forward direction, store in out_batch
+    // if(layer_type == LAYUP_TRANSFER_SENSITIVE)
+    // {
+    //     allocate_buffers();
+    // }
     CUDNN_CALL(
         cudnnPoolingForward(
         cudnnHandle, 
@@ -747,6 +833,10 @@ void Pool2D::forward_pass()
         &zero,
         out_shape, out_batch    
         ));
+    // if(layer_type == LAYUP_TRANSFER_SENSITIVE)
+    // {
+    //     deallocate_buffers();
+    // }
     // printf("Done forward passs in Pool2D\n");
 }
 
@@ -813,6 +903,7 @@ void SoftmaxCrossEntropy::forward_pass()
     // TODO (set 5): do softmax forward pass using accurate softmax and
     //               per instance mode. store result in out_batch.
     // cout<<"Inside forward pass of SoftmaxCrossEntropy layer"<<endl;
+
     CUDNN_CALL( cudnnSoftmaxForward(
 				cudnnHandle, CUDNN_SOFTMAX_ACCURATE, CUDNN_SOFTMAX_MODE_INSTANCE,
 				&one,
@@ -820,6 +911,7 @@ void SoftmaxCrossEntropy::forward_pass()
 				&zero,
 				out_shape, out_batch		
 				) );
+ 
 
 }
 

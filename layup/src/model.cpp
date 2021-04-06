@@ -403,8 +403,17 @@ void Model::train_on_batch(const float *batch_X, float *batch_Y, float lr)
 
     // Do a backward pass through every layer
     std::vector<Layer *>::reverse_iterator rit;
-    for (rit = this->layers->rbegin(); rit != this->layers->rend(); ++rit)
+    for (rit = --this->layers->end(); ; --rit)
+    {
+        for (it = this->layers->begin(); it!=rit ; it++)
+            (*it)->forward_pass();
+        assert(it==rit);
         (*rit)->backward_pass(lr);
+        if(rit == this->layers->begin())
+        {
+            break;
+        }
+    }
 }
 
 
