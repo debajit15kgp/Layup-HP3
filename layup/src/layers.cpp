@@ -204,8 +204,8 @@ void Layer::deallocate_buffers()
     // out_batch and grad_out_batch have the same shape as the output
     int out_size = n * c * h * w;
 
-    CUDA_CALL( cudaFree(&out_batch ));
-    CUDA_CALL( cudaFree(&grad_out_batch));
+    CUDA_CALL( cudaFree(out_batch ));
+    CUDA_CALL( cudaFree(grad_out_batch));
 
     // CUDA_CALL( cudaMalloc(&out_batch, out_size * sizeof(float)) );
     // CUDA_CALL( cudaMalloc(&grad_out_batch, out_size * sizeof(float)) );
@@ -213,15 +213,15 @@ void Layer::deallocate_buffers()
     // Allocate buffers for the weights and biases (if there are any)
     if (n_weights > 0)
     {
-        CUDA_CALL( cudaFree(&weights));
-        CUDA_CALL( cudaFree(&grad_weights));
+        CUDA_CALL( cudaFree(weights));
+        CUDA_CALL( cudaFree(grad_weights));
         // CUDA_CALL( cudaMalloc(&weights, n_weights * sizeof(float)) );
         // CUDA_CALL( cudaMalloc(&grad_weights, n_weights * sizeof(float)) );
     }
     if (n_biases > 0)
     {
-        CUDA_CALL( cudaFree(&biases ));
-        CUDA_CALL( cudaFree(&grad_biases));
+        CUDA_CALL( cudaFree(biases ));
+        CUDA_CALL( cudaFree(grad_biases));
         // CUDA_CALL( cudaMalloc(&biases, n_biases * sizeof(float)) );
         // CUDA_CALL( cudaMalloc(&grad_biases, n_biases * sizeof(float)) );
     }
