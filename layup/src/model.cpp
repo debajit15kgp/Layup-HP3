@@ -19,6 +19,7 @@
 #include "layers.hpp"
 #include "model.hpp"
 #include "helper_cuda.h"
+#include <bits/stdc++.h>
 
 #define ABS(x) (((x) >= 0) ? (x) : -(x))
 
@@ -346,10 +347,10 @@ void Model::profile_on_batch(const float *batch_X, float *batch_Y, float lr)
     cudaEvent_t seq_start, seq_end, tran_start, tran_end;
 	 cudaEventCreate(&seq_start);
 	 cudaEventCreate(&seq_end);
-   cudaEventCreate(&tran_start);
+     cudaEventCreate(&tran_start);
 	 cudaEventCreate(&tran_end);
 
-   double cumulative = 0.0;
+    double cumulative = 0.0;
     // Do a forward pass through every layer
     int layer_num = 0;
     std::vector<Layer *>::iterator it;
@@ -431,13 +432,95 @@ void Model::train_on_batch(const float *batch_X, float *batch_Y, float lr)
 
     // Do a forward pass through every layer
     std::vector<Layer *>::iterator it;
+    int index = 0;
     for (it = this->layers->begin(); it != this->layers->end(); ++it)
+    {
+        if(it != this->layers->begin() && it != this->layers->end()-1)
+        {
+            (*it)->allocate_buffers();
+        }
         (*it)->forward_pass();
+        if(std::binary_search((this->checkpoints).begin(), (this->checkpoints).end(), index))
+        {
+            // Get the shape of the output
+            cudnnDataType_t dtype;
+            int n, c, h, w, n_stride, c_stride, h_stride, w_stride;
+            CUDNN_CALL( cudnnGetTensor4dDescriptor((*this->layers)[index]->get_out_shape(), &dtype,
+                &n, &c, &h, &w, &n_stride, &c_stride, &h_stride, &w_stride) );
 
+            CUDA_CALL( cudaMemcpyAsync( (*this->cpu_memory)[index], (*this->layers)[index]->out_batch, 
+                n*c*h*w*sizeof(float), cudaMemcpyDeviceToHost, 1));
+        }
+        if(it != this->layers->begin() && it != this->layers->end()-1)
+        {
+            (*it)->deallocate_buffers();
+        }
+        index++;
+    }
+    CUDA_CALL(cudaStreamSynchronize(1));
     // Do a backward pass through every layer
-    std::vector<Layer *>::reverse_iterator rit;
-    for (rit = this->layers->rbegin(); rit != this->layers->rend(); ++rit)
-        (*rit)->backward_pass(lr);
+ 
+    int size = this->layers->size();
+    int check_size = this->checkpoints.size();
+    int cur_checkpoint = check_size - 1;
+    for (int i = size-1; i>=0; i--)
+    {
+        int cur = this->checkpoints[cur_checkpoint];
+        
+        if(cur_checkpoint>0)
+        {
+            int last = this->checkpoints[cur_checkpoint-1];
+
+            // Get the shape of the output
+            cudnnDataType_t dtype;
+            int n, c, h, w, n_stride, c_stride, h_stride, w_stride;
+            CUDNN_CALL( cudnnGetTensor4dDescriptor((*this->layers)[last]->get_out_shape(), &dtype,
+                &n, &c, &h, &w, &n_stride, &c_stride, &h_stride, &w_stride) );
+
+            int out_size = n * c * h * w;
+            CUDA_CALL( cudaMalloc(&(*this->layers)[last]->out_batch, out_size * sizeof(float)) );;
+
+            CUDA_CALL( cudaMemcpyAsync( (*this->layers)[last]->out_batch, (*this->cpu_memory)[last],
+                n*c*h*w*sizeof(float), cudaMemcpyHostToDevice, 1));
+        }
+        
+        for(int j = cur+1; j<i; j++)
+        {
+            if(j != cur+1 && j != i-1)
+            {
+                (*it)->allocate_buffers();
+            }
+            (*this->layers)[j]->forward_pass();
+        }
+
+        // calculating from last+1
+        for(int k = i; k>=cur; k--)
+        {
+            (*this->layers)[k]->backward_pass(lr);
+        }
+        for(int j = cur+1; j<i; j++)
+        {
+            if(j != cur+1 && j != i-1)
+            {
+                (*it)->deallocate_buffers();
+            }
+        }
+        i = cur;
+        cur_checkpoint--;
+    }
+    // for (rit = this->layers->end(); ; --rit)
+    // {
+    //     if(rit == this->layers->end())
+    //     {
+    //         Layer last_layer = this->layers[this->checkpoints[(this->checkpoints.size())-1]];
+
+    //     }
+    //     (*rit)->backward_pass(lr);
+    //     if(rit == this->layers->begin())
+    //     {
+    //         break;
+    //     }
+    // }
 }
 
 
