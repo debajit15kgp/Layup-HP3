@@ -448,7 +448,7 @@ void Model::train_on_batch(const float *batch_X, float *batch_Y, float lr)
             CUDNN_CALL( cudnnGetTensor4dDescriptor((*this->layers)[index]->get_out_shape(), &dtype,
                 &n, &c, &h, &w, &n_stride, &c_stride, &h_stride, &w_stride) );
 
-            CUDA_CALL( cudaMemcpyAsync( (*this->cpu_memory)[index], (*this->layers)[index]->out_batch, 
+            CUDA_CALL( cudaMemcpyAsync( (*((this)->cpu_memory))[index], (*((this)->layers))[index]->out_batch, 
                 n*c*h*w*sizeof(float), cudaMemcpyDeviceToHost, 1));
         }
         if(it != this->layers->begin() && it != this->layers->end()-1)
@@ -480,7 +480,7 @@ void Model::train_on_batch(const float *batch_X, float *batch_Y, float lr)
             int out_size = n * c * h * w;
             CUDA_CALL( cudaMalloc(&(*this->layers)[last]->out_batch, out_size * sizeof(float)) );;
 
-            CUDA_CALL( cudaMemcpyAsync( (*this->layers)[last]->out_batch, (*this->cpu_memory)[last],
+            CUDA_CALL( cudaMemcpyAsync( (*((this)->layers))[last]->out_batch, (*((this)->cpu_memory))[last],
                 n*c*h*w*sizeof(float), cudaMemcpyHostToDevice, 1));
         }
         
