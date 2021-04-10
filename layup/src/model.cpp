@@ -455,6 +455,7 @@ void Model::train_on_batch(const float *batch_X, float *batch_Y, float lr)
             CUDA_CALL( cudaMemcpyAsync( (this)->cpu_memory[index], (*((this)->layers))[index]->out_batch, 
                 n*c*h*w*sizeof(float), cudaMemcpyDeviceToHost, stream1));
         }
+        printf("check %d\n",index);
         if(it != this->layers->begin() && it != this->layers->end()-1)
         {
             printf("%d\n",index);
@@ -515,6 +516,7 @@ void Model::train_on_batch(const float *batch_X, float *batch_Y, float lr)
         {
             if(j != cur+1 && j != i-1)
             {
+                printf("%d Haha\n",j);
                 try
                 {
                     (*it)->deallocate_buffers();
