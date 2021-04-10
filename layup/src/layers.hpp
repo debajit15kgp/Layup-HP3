@@ -36,7 +36,7 @@ public:
     /* Functions for allocating and setting up weights, biases, and input/output
      * minibatches of data. */
     void allocate_buffers();
-    void deallocate_buffers()
+    void deallocate_buffers();
     void init_weights_biases();
 
     /* Functions to evaluate model performance. Only valid for loss layers,
@@ -112,31 +112,6 @@ protected:
     /** Size of {\link Layer::workspace} in bytes */
     size_t workspace_size = 0;
 
-    /**
-     * The input minibatch to this layer. Computed by the previous layer.
-     * Has shape in_shape.
-     */
-    float *in_batch = nullptr;
-
-    /**
-     * The output minibatch from this layer. Pointer shared with in_batch of
-     * the next layer.
-     * Has shape out_shape.
-     */
-    float *out_batch = nullptr;
-
-
-    /**
-     * Derivative wrt out_batch. Computed by the next layer.
-     * Has shape out_shape.
-     */
-    float *grad_out_batch = nullptr;
-
-    /**
-     * Derivative wrt the input batch.
-     * Has shape in_shape.
-     */
-    float *grad_in_batch = nullptr;
 
 
     /************************************************************************/
