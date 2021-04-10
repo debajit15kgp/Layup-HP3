@@ -457,7 +457,8 @@ void Model::train_on_batch(const float *batch_X, float *batch_Y, float lr)
         }
         index++;
     }
-    CUDA_CALL(cudaStreamSynchronize(1));
+    
+    CUDA_CALL(cudaDeviceSynchronize());
     // Do a backward pass through every layer
  
     int size = this->layers->size();
