@@ -22,7 +22,7 @@
 #include <bits/stdc++.h>
 
 #define ABS(x) (((x) >= 0) ? (x) : -(x))
-cudaStream_t *stream1;
+cudaStream_t stream1;
     
 
 /**
