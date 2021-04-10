@@ -436,6 +436,7 @@ void Model::train_on_batch(const float *batch_X, float *batch_Y, float lr)
     // Do a forward pass through every layer
     std::vector<Layer *>::iterator it;
     int index = 0;
+
     for (it = this->layers->begin(); it != this->layers->end(); ++it)
     {
         if(it != this->layers->begin() && it != this->layers->end()-1)
@@ -457,7 +458,14 @@ void Model::train_on_batch(const float *batch_X, float *batch_Y, float lr)
         if(it != this->layers->begin() && it != this->layers->end()-1)
         {
             printf("%d\n",index);
-            (*it)->deallocate_buffers();
+            try
+            {
+                (*it)->deallocate_buffers();
+            }
+            catch(...)
+            {
+            }
+            
         }
         index++;
     }
@@ -507,7 +515,15 @@ void Model::train_on_batch(const float *batch_X, float *batch_Y, float lr)
         {
             if(j != cur+1 && j != i-1)
             {
-                (*it)->deallocate_buffers();
+                try
+                {
+                    (*it)->deallocate_buffers();
+                }
+                catch(...)
+                {
+                }
+                
+                
             }
         }
         i = cur;
