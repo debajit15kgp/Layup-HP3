@@ -456,6 +456,7 @@ void Model::train_on_batch(const float *batch_X, float *batch_Y, float lr)
         }
         if(it != this->layers->begin() && it != this->layers->end()-1)
         {
+            printf("%d\n",index);
             (*it)->deallocate_buffers();
         }
         index++;
